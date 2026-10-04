@@ -142,7 +142,7 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
                 "💬 Cộng Đồng": ["💬-tán-gẫu", "🖼️-media", "🤖-bot-commands"],
                 "🎯 Leo Rank": ["🔍-tìm-đồng-đội", "📊-thành-tích", "🎙️-rank-voice"],
             },
-            "roles": ["👑 Admin", "🛡️ Moderator", "🎮 Gamer", "⭐ VIP", "👤 Member"],
+            "roles": ["Admin", "Moderator", "Gamer", "VIP", "Member"],
         },
         "study": {
             "cats": ["📚 Học Tập", "📢 Thông Tin", "💬 Thảo Luận", "🎯 Luyện Tập"],
@@ -152,19 +152,19 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
                 "💬 Thảo Luận": ["💬-hỏi-đáp", "🤝-study-together", "🤖-bot-commands"],
                 "🎯 Luyện Tập": ["📝-bài-tập", "🏆-xếp-hạng", "🎙️-study-voice"],
             },
-            "roles": ["👑 Admin", "🛡️ Moderator", "🎓 Học Viên", "⭐ Trợ Giảng", "👤 Member"],
+            "roles": ["Admin", "Moderator", "Học Viên", "Trợ Giảng", "Member"],
         },
         "community": {
-            "cats": ["📢 Thông Tin",👤 "💬 Trò Chuyện", "🎉 Giải Trí", "🔊 Voice Chat"],
+            "cats": ["📢 Thông Tin", "💬 Trò Chuyện", "🎉 Giải Trí", "🔊 Voice Chat"],
             "channels": {
-                " Member📢 Thông Tin": ["👋-chào-mừng", "📣-thông-báo", "📜-n"],
-ội-quy", "🎭-chọn-role"],
-                "💬 Trò Chuyện": ["💬-tổ       ng-hợp", "🖼️-media", "😂-meme", "🤖-bot-commands"],
-                "🎉 Giải Trí": ["🎵 },
--âm-nhạc", "🎮-mini-game", "🎬-phim", "🎨-nghệ-thuật"],
-                   "🔊 Voice Chat": ["🔊-voice-chung", "🎮-gaming-voice", "🎵-music-voice"],
+                "📢 Thông Tin": ["👋-chào-mừng", "📣-thông-báo", "📜-nội-quy", "🎭-chọn-role"],
+                "💬 Trò Chuyện": ["💬-tổng-hợp", "🖼️-media", "😂-meme", "🤖-bot-commands"],
+                "🎉 Giải Trí": ["🎵-âm-nhạc", "🎮-mini-game", "🎬-phim", "🎨-nghệ-thuật"],
+                "🔊 Voice Chat": ["🔊-voice-chung", "🎮-gaming-voice", "🎵-music-voice"],
             },
-            "roles": ["👑 Admin", "🛡️ Moderator", "⭐ VIP", "💎 Boosters", " }
+            "roles": ["Admin", "Moderator", "VIP", "Boosters", "Member"],
+        },
+    }
 
     preset = presets.get(theme_name, presets["community"])
 
@@ -261,8 +261,10 @@ async def on_ready():
 async def setup_command(interaction: discord.Interaction):
     await interaction.response.send_modal(SetupModal())
 
+# ===== WELCOME / GOODBYE + AUTO ROLE =====
 @bot.event
 async def on_member_join(member: discord.Member):
+    # Auto role Member
     try:
         for role in member.guild.roles:
             if "Member" in role.name or "Thành viên" in role.name:
@@ -271,8 +273,49 @@ async def on_member_join(member: discord.Member):
     except Exception as e:
         print(f"⚠️ Không thể auto-role: {e}")
 
+    # Welcome message
+    channel = discord.utils.get(member.guild.text_channels, name="👋-chào-mừng")
+    if channel is None:
+        channel = discord.utils.get(member.guild.text_channels, name="chào-mừng")
+    if channel:
+        embed = discord.Embed(
+            title=f"🎉 Chào mừng {member.name}!",
+            description=(
+                f"{member.mention} vừa tham gia **{member.guild.name}**!\n\n"
+                f"> 👥 Bạn là thành viên thứ **{member.guild.member_count}**\n"
+                f"> 📜 Đọc nội quy ở kênh **nội-quy**\n"
+                f"> 🎭 Chọn role ở kênh **chọn-role**"
+            ),
+            color=0x57F287,
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"ID: {member.id}")
+        embed.timestamp = discord.utils.utcnow()
+        try:
+            await channel.send(embed=embed)
+        except Exception as e:
+            print(f"⚠️ Không gửi được welcome: {e}")
+
+@bot.event
+async def on_member_remove(member: discord.Member):
+    channel = discord.utils.get(member.guild.text_channels, name="👋-chào-mừng")
+    if channel is None:
+        channel = discord.utils.get(member.guild.text_channels, name="chào-mừng")
+    if channel:
+        embed = discord.Embed(
+            title=f"👋 Tạm biệt {member.name}!",
+            description=f"**{member.name}** đã rời khỏi server. Hẹn gặp lại! 💔",
+            color=0xED4245,
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.timestamp = discord.utils.utcnow()
+        try:
+            await channel.send(embed=embed)
+        except Exception as e:
+            print(f"⚠️ Không gửi được goodbye: {e}")
+
 # ===== MAIN =====
 if __name__ == "__main__":
     threading.Thread(target=run_http_server, daemon=True).start()
     bot.run(TOKEN)
-  
+    
