@@ -14,41 +14,24 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
 PORT = int(os.getenv("PORT", 3000))
 
-# ===== HTTP SERVER (giữ Render Free không bị sleep) =====
+
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.end_headers()
-        self.wfile.write("Bot is alive!".encode("utf-8"))
+        self.wfile.write(b"Bot is alive!")
 
     def log_message(self, format, *args):
         pass
+
 
 def run_http_server():
     server = HTTPServer(("0.0.0.0", PORT), HealthHandler)
     print(f"[HTTP] Server chay tai port {PORT}")
     server.serve_forever()
 
-# ===== FONT FANCY =====
-def fancy(text: str) -> str:
-    mapping = {}
-    for i, c in enumerate("abcdefghijklmnopqrstuvwxyz"):
-        mapping[c] = chr(0x1D41A + i)
-    for i, c in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
-        mapping[c] = chr(0x1D400 + i)
-    return "".join(mapping.get(ch, ch) for ch in text)
 
-def small_caps(text: str) -> str:
-    return re.sub(r"[a-z]", lambda m: chr(ord(m.group()) + 0x1D00), text)
-
-# ===== ICON =====
-ICONS = {
-    "category": ["📢", "💬", "🎮", "📚", "🎨", "🛠️", "🎉", "💼", "🌐"],
-    "announce": ["📣", "🔔", "📢"],
-}
-
-# ===== MODAL NHẬP LIỆU =====
 class SetupModal(discord.ui.Modal, title="Thiet lap server bang AI"):
     category_count = discord.ui.TextInput(
         label="So luong category muon tao",
@@ -64,7 +47,7 @@ class SetupModal(discord.ui.Modal, title="Thiet lap server bang AI"):
     )
     description = discord.ui.TextInput(
         label="Nhap yeu cau cua ban",
-        placeholder="Mo ta server ban muon (chu de, co kenh gi, quy mo cong dong...)",
+        placeholder="Mo ta server ban muon...",
         style=discord.TextStyle.paragraph,
         required=True,
         max_length=1000,
@@ -87,35 +70,23 @@ class SetupModal(discord.ui.Modal, title="Thiet lap server bang AI"):
             stats = await build_server(
                 interaction.guild, count, user_names, self.description.value
             )
-
             embed = discord.Embed(
-                title=f"{fancy('Setup Server Complete')}",
+                title="Setup Server Complete",
                 description=(
-                    f"{ICONS['announce'][0]} **Da thiet lap server thanh cong!**\n\n"
-                    f"> 📁 **Category:** `{stats['categories']}`\n"
-                    f"> 💬 **Text Channels:** `{stats['text_channels']}`\n"
-                    f"> 🔊 **Voice Channels:** `{stats['voice_channels']}`\n"
-                    f"> 🎭 **Roles:** `{stats['roles']}`\n\n"
-                    f"*{small_caps('Chuc ban quan ly server vui ve!')}*"
+                    f"Da thiet lap server thanh cong!\n\n"
+                    f"Category: {stats['categories']}\n"
+                    f"Text Channels: {stats['text_channels']}\n"
+                    f"Voice Channels: {stats['voice_channels']}\n"
+                    f"Roles: {stats['roles']}"
                 ),
                 color=0x5865F2,
             )
-            embed.set_footer(
-                text="Powered by DobbySetup",
-                icon_url=interaction.client.user.display_avatar.url,
-            )
-            embed.timestamp = discord.utils.utcnow()
-
             await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
             print(f"[MODAL ERROR] {e}")
-            await interaction.followup.send(
-                f"Loi: `{e}`\n\nKiem tra bot co quyen Administrator "
-                f"va role bot nam tren cung.",
-                ephemeral=True,
-            )
+            await interaction.followup.send(f"Loi: {e}", ephemeral=True)
 
-# ===== HÀM TẠO SERVER =====
+
 async def build_server(guild: discord.Guild, count: int, user_names: list, description: str):
     text = description.lower()
 
@@ -123,9 +94,6 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
         "gaming": r"game|gaming|lien quan|valorant|lol|minecraft|pubg|fps|esport",
         "study": r"hoc|study|school|truong|toan|ly|hoa|english|ielts|tai lieu",
         "community": r"cong dong|community|chung|chat|giao luu|ket ban",
-        "music": r"nhac|music|am nhac|karaoke|beat",
-        "art": r"ve|art|thiet ke|design|my thuat|draw",
-        "tech": r"code|lap trinh|tech|cong nghe|dev|it",
     }
 
     theme_name = "community"
@@ -136,32 +104,32 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
 
     presets = {
         "gaming": {
-            "cats": ["🎮 Khu Vuc Gaming", "📢 Thong Tin", "💬 Cong Dong", "🎯 Leo Rank"],
+            "cats": ["Khu Vuc Gaming", "Thong Tin", "Cong Dong", "Leo Rank"],
             "channels": {
-                "🎮 Khu Vuc Gaming": ["🎮-game-chung", "🔫-fps", "⚔️-moba", "🏆-giai-dau"],
-                "📢 Thong Tin": ["📣-thong-bao", "📜-noi-quy", "🎉-su-kien"],
-                "💬 Cong Dong": ["💬-tan-gau", "🖼️-media", "🤖-bot-commands"],
-                "🎯 Leo Rank": ["🔍-tim-dong-doi", "📊-thanh-tich", "🎙️-rank-voice"],
+                "Khu Vuc Gaming": ["game-chung", "fps", "moba", "giai-dau"],
+                "Thong Tin": ["thong-bao", "noi-quy", "su-kien"],
+                "Cong Dong": ["tan-gau", "media", "bot-commands"],
+                "Leo Rank": ["tim-dong-doi", "thanh-tich", "rank-voice"],
             },
             "roles": ["Admin", "Moderator", "Gamer", "VIP", "Member"],
         },
         "study": {
-            "cats": ["📚 Hoc Tap", "📢 Thong Tin", "💬 Thao Luan", "🎯 Luyen Tap"],
+            "cats": ["Hoc Tap", "Thong Tin", "Thao Luan", "Luyen Tap"],
             "channels": {
-                "📚 Hoc Tap": ["📖-tai-lieu", "🧮-toan", "🔬-khoa-hoc", "📝-tieng-anh"],
-                "📢 Thong Tin": ["📣-thong-bao", "📜-noi-quy", "📅-lich-hoc"],
-                "💬 Thao Luan": ["💬-hoi-dap", "🤝-study-together", "🤖-bot-commands"],
-                "🎯 Luyen Tap": ["📝-bai-tap", "🏆-xep-hang", "🎙️-study-voice"],
+                "Hoc Tap": ["tai-lieu", "toan", "khoa-hoc", "tieng-anh"],
+                "Thong Tin": ["thong-bao", "noi-quy", "lich-hoc"],
+                "Thao Luan": ["hoi-dap", "study-together", "bot-commands"],
+                "Luyen Tap": ["bai-tap", "xep-hang", "study-voice"],
             },
             "roles": ["Admin", "Moderator", "Hoc Vien", "Tro Giang", "Member"],
         },
         "community": {
-            "cats": ["📢 Thong Tin", "💬 Tro Chuyen", "🎉 Giai Tri", "🔊 Voice Chat"],
+            "cats": ["Thong Tin", "Tro Chuyen", "Giai Tri", "Voice Chat"],
             "channels": {
-                "📢 Thong Tin": ["👋-chao-mung", "📣-thong-bao", "📜-noi-quy", "🎭-chon-role"],
-                "💬 Tro Chuyen": ["💬-tong-hop", "🖼️-media", "😂-meme", "🤖-bot-commands"],
-                "🎉 Giai Tri": ["🎵-am-nhac", "🎮-mini-game", "🎬-phim", "🎨-nghe-thuat"],
-                "🔊 Voice Chat": ["🔊-voice-chung", "🎮-gaming-voice", "🎵-music-voice"],
+                "Thong Tin": ["chao-mung", "thong-bao", "noi-quy", "chon-role"],
+                "Tro Chuyen": ["tong-hop", "media", "meme", "bot-commands"],
+                "Giai Tri": ["am-nhac", "mini-game", "phim", "nghe-thuat"],
+                "Voice Chat": ["voice-chung", "gaming-voice", "music-voice"],
             },
             "roles": ["Admin", "Moderator", "VIP", "Boosters", "Member"],
         },
@@ -170,10 +138,7 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
     preset = presets.get(theme_name, presets["community"])
 
     if user_names:
-        cat_names = [
-            f"{ICONS['category'][i % len(ICONS['category'])]} {n}"
-            for i, n in enumerate(user_names[:count])
-        ]
+        cat_names = user_names[:count]
     else:
         cat_names = preset["cats"][:count]
 
@@ -183,7 +148,7 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
         try:
             await guild.create_role(
                 name=role_name,
-                reason="DobbySetup Bot",
+                reason="DobbySetup",
                 colour=discord.Colour.random(),
             )
             stats["roles"] += 1
@@ -192,10 +157,7 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
 
     for cat_name in cat_names:
         try:
-            category = await guild.create_category(
-                name=cat_name,
-                reason="DobbySetup Bot",
-            )
+            category = await guild.create_category(name=cat_name, reason="DobbySetup")
             stats["categories"] += 1
         except Exception as e:
             print(f"[CAT ERROR] {cat_name}: {e}")
@@ -210,24 +172,20 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
                 break
 
         channel_list = preset["channels"].get(
-            preset_key, ["💬-chung", "📌-thong-bao", "🤖-bot-commands"]
+            preset_key, ["chung", "thong-bao", "bot-commands"]
         )
 
         for ch_name in channel_list:
-            is_voice = bool(re.search(r"voice|🎙️|🔊", ch_name))
+            is_voice = bool(re.search(r"voice", ch_name))
             try:
                 if is_voice:
                     await guild.create_voice_channel(
-                        name=ch_name,
-                        category=category,
-                        reason="DobbySetup Bot",
+                        name=ch_name, category=category, reason="DobbySetup"
                     )
                     stats["voice_channels"] += 1
                 else:
                     await guild.create_text_channel(
-                        name=ch_name,
-                        category=category,
-                        reason="DobbySetup Bot",
+                        name=ch_name, category=category, reason="DobbySetup"
                     )
                     stats["text_channels"] += 1
             except Exception as e:
@@ -235,7 +193,7 @@ async def build_server(guild: discord.Guild, count: int, user_names: list, descr
 
     return stats
 
-# ===== BOT =====
+
 intents = discord.Intents.default()
 intents.guilds = True
 intents.members = True
@@ -243,7 +201,7 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ===== ON READY - SYNC LỆNH =====
+
 @bot.event
 async def on_ready():
     print(f"===== BOT ONLINE: {bot.user} =====")
@@ -255,31 +213,27 @@ async def on_ready():
         if GUILD_ID:
             guild = discord.Object(id=int(GUILD_ID))
             print(f"===== SYNCING to guild {GUILD_ID} =====")
-
             bot.tree.clear_commands(guild=guild)
             await bot.tree.sync(guild=guild)
-            print("===== CLEARED old commands =====")
-
+            print("===== CLEARED =====")
             bot.tree.copy_global_to(guild=guild)
             synced = await bot.tree.sync(guild=guild)
             print(f"===== SYNCED {len(synced)} commands =====")
         else:
-            print("===== NO GUILD_ID, SYNC GLOBAL =====")
             synced = await bot.tree.sync()
-            print(f"===== SYNCED {len(synced)} commands global =====")
+            print(f"===== SYNCED {len(synced)} global =====")
     except Exception as e:
         print(f"===== SYNC ERROR: {e} =====")
 
-# ===== LỆNH /setup =====
+
 @bot.tree.command(name="setup", description="Thiet lap server bang AI")
 @app_commands.default_permissions(administrator=True)
 async def setup_command(interaction: discord.Interaction):
     await interaction.response.send_modal(SetupModal())
 
-# ===== WELCOME / GOODBYE =====
+
 @bot.event
 async def on_member_join(member: discord.Member):
-    # Auto role
     try:
         for role in member.guild.roles:
             if role.name == "Member":
@@ -288,7 +242,6 @@ async def on_member_join(member: discord.Member):
     except Exception as e:
         print(f"[AUTO ROLE ERROR] {e}")
 
-    # Welcome
     channel = None
     for c in member.guild.text_channels:
         if "chao-mung" in c.name.lower() or "welcome" in c.name.lower():
@@ -297,15 +250,40 @@ async def on_member_join(member: discord.Member):
 
     if channel:
         embed = discord.Embed(
-            title=f"🎉 Chao mung {member.name}!",
-            description=(
-                f"{member.mention} vua tham gia **{member.guild.name}**!\n\n"
-                f"> 👥 Ban la thanh vien thu **{member.guild.member_count}**\n"
-                f"> 📜 Doc noi quy o kenh **noi-quy**\n"
-                f"> 🎭 Chon role o kenh **chon-role**"
-            ),
+            title=f"Chao mung {member.name}!",
+            description=f"{member.mention} vua tham gia {member.guild.name}!",
             color=0x57F287,
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        embed.set
-        
+        try:
+            await channel.send(embed=embed)
+        except Exception as e:
+            print(f"[WELCOME ERROR] {e}")
+
+
+@bot.event
+async def on_member_remove(member: discord.Member):
+    channel = None
+    for c in member.guild.text_channels:
+        if "goodbye" in c.name.lower():
+            channel = c
+            break
+    if channel:
+        embed = discord.Embed(
+            title=f"Tam biet {member.name}!",
+            description=f"{member.name} da roi server.",
+            color=0xED4245,
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        try:
+            await channel.send(embed=embed)
+        except Exception as e:
+            print(f"[GOODBYE ERROR] {e}")
+
+
+if __name__ == "__main__":
+    if not TOKEN:
+        raise SystemExit("Thieu DISCORD_TOKEN")
+    threading.Thread(target=run_http_server, daemon=True).start()
+    bot.run(TOKEN)
+    
